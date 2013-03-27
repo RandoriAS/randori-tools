@@ -14,6 +14,7 @@ namespace WebIDLParser
         public static List<Tuple<string, string>> generateElementConstructor = new List<Tuple<string, string>>();
         public static Dictionary<string, string> generateElementConstructorCorrectName = new Dictionary<string, string>();
         public static Dictionary<string, string> changeDelegateResultType = new Dictionary<string, string>();
+        public static Dictionary<string, List<TMethod>> addMethodToType = new Dictionary<string, List<TMethod>>();
     }
 
     public static class Transformations
@@ -29,7 +30,8 @@ namespace WebIDLParser
             TransformationConfig.renameType.Add(oldName, newName);
         }
 
-        public static void moveToRootNamespace(string path) {
+        public static void moveToRootNamespace(string path)
+        {
             TransformationConfig.moveToRootNamespace.Add(path);
         }
 
@@ -53,6 +55,16 @@ namespace WebIDLParser
             TransformationConfig.changeDelegateResultType.Add(delegateTypeName, newResultType);
         }
 
-    }
+        public static void addMethodToType(string TypeName, TMethod Method)
+        {
+            if (TransformationConfig.addMethodToType.ContainsKey(TypeName) == false)
+            {
+                TransformationConfig.addMethodToType[TypeName] = new List<TMethod>();
+            }
+            var list = TransformationConfig.addMethodToType[TypeName];
+            list.Add(Method);
+        }
 
+    }
+        
 }

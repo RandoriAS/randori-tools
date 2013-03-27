@@ -444,6 +444,12 @@ namespace WebIDLParser
             {
                 jsAttributes.Add("nativecondition", "\"" + attr.value + "\"");
             }
+            attr = attributes.FindAll(a => a is TNameAttribute).Cast<TNameAttribute>().FirstOrDefault(a => a.name == "OmitConstructor");
+            if (attr != null)
+            {
+                jsAttributes.Add("omitconstructor", "\"true\"");
+            }
+
 
             if (aliasName == "") aliasName = name; //Give all types an Name-attribute (without namespace)
             if (aliasName != "") jsAttributes.Add("name", "\"" + aliasName + "\"");

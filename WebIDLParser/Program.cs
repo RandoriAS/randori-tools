@@ -34,8 +34,8 @@ namespace WebIDLParser
         //which is used to generate the ASDoc comments inside the actionscript sources.
         public static string w3cDirectory = @"D:\w3c\";
 
-        //Path to the existing project SharpKit.Html project
-        public static string csOutDirectory = @"C:\projects\RandoriAS\HTMLCoreLib\src\randori\webkit\";
+        //Path to the existing project HTMLCoreLib project
+        public static string csOutDirectory = @"C:\projects\Randori Framework\Libraries\HTMLCoreLib\src\randori\webkit\";
 
         //Path to the WebKit(--> WebCore) sources. ( http://trac.webkit.org/browser/trunk/Source/WebCore/ )
         public static string idlInDirectory = @"C:\projects\WebCore\";
@@ -89,6 +89,60 @@ namespace WebIDLParser
             Transformations.changeDelegateResultType("PositionErrorCallback", "void");
 
             Transformations.renameType("Event", "DomEvent");
+
+            var jsonMethod = new TMethod(null);
+            jsonMethod.name = "JSON";
+            jsonMethod.resultType = new TType() { name = "Object" };
+            jsonMethod.parameters.Add(new TParameter() { name = "JSONString", type = new TType() { name = "String" } });
+            Transformations.addMethodToType("Window", jsonMethod);
+
+            var sendMethod = new TMethod(null);
+            sendMethod.name = "send";
+            sendMethod.resultType = new TType() { name = "void" };
+            var Param = new TParameter() { name = "data", type = new TType() { name = "*" } };
+            Param.attributes.Add(new TNameAttribute(){ name="Optional" });
+            sendMethod.parameters.Add(Param);
+            Transformations.addMethodToType("XMLHttpRequest", sendMethod);
+            
+            sendMethod = new TMethod(null);
+            sendMethod.name = "sendArrayBuffer";
+            sendMethod.aliasName = "send";
+            sendMethod.resultType = new TType() { name = "void" };
+            Param = new TParameter() { name = "data", type = new TType() { name = "ArrayBuffer" } };
+            sendMethod.parameters.Add(Param);
+            Transformations.addMethodToType("XMLHttpRequest", sendMethod);
+
+            sendMethod = new TMethod(null);
+            sendMethod.name = "sendBlob";
+            sendMethod.aliasName = "send";
+            sendMethod.resultType = new TType() { name = "void" };
+            Param = new TParameter() { name = "data", type = new TType() { name = "Blob" } };
+            sendMethod.parameters.Add(Param);
+            Transformations.addMethodToType("XMLHttpRequest", sendMethod);
+
+            sendMethod = new TMethod(null);
+            sendMethod.name = "sendDocument";
+            sendMethod.aliasName = "send";
+            sendMethod.resultType = new TType() { name = "void" };
+            Param = new TParameter() { name = "data", type = new TType() { name = "Document" } };
+            sendMethod.parameters.Add(Param);
+            Transformations.addMethodToType("XMLHttpRequest", sendMethod);
+
+            sendMethod = new TMethod(null);
+            sendMethod.name = "sendString";
+            sendMethod.aliasName = "send";
+            sendMethod.resultType = new TType() { name = "void" };
+            Param = new TParameter() { name = "data", type = new TType() { name = "String" } };
+            sendMethod.parameters.Add(Param);
+            Transformations.addMethodToType("XMLHttpRequest", sendMethod);
+
+            sendMethod = new TMethod(null);
+            sendMethod.name = "sendFormData";
+            sendMethod.aliasName = "send";
+            sendMethod.resultType = new TType() { name = "void" };
+            Param = new TParameter() { name = "data", type = new TType() { name = "FormData" } };
+            sendMethod.parameters.Add(Param);
+            Transformations.addMethodToType("XMLHttpRequest", sendMethod);
         }
 
     }
