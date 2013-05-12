@@ -365,7 +365,17 @@ namespace System.CodeDom.Compiler
             Output.Write("(");
             OutputParameters(method.Parameters);
             Output.Write("):");
+            CodeTypeReference returnType = null;
+            if ((bool)method.UserData["IsAsterisk"] == true)
+            {
+                returnType = method.ReturnType;
+                method.ReturnType = new CodeTypeReference("*");
+            }
             OutputType(method.ReturnType);
+            if (returnType != null)
+            {
+                method.ReturnType = returnType;
+            }
 
             if (!IsCurrentInterface
                 && (method.Attributes & MemberAttributes.ScopeMask) != MemberAttributes.Abstract)
@@ -373,18 +383,7 @@ namespace System.CodeDom.Compiler
 
                 OutputStartingBrace();
                 Indent++;
-                CodeTypeReference returnType = null;
-                if ((bool)method.UserData["IsAsterisk"] == true)
-                {
-                    returnType = method.ReturnType;
-                    method.ReturnType = new CodeTypeReference("*");
-                }
                 GenerateStatements(method.Statements);
-                if (returnType != null)
-                {
-                    method.ReturnType = returnType;
-                }
-
                 Indent--;
                 Output.WriteLine("}");
             }

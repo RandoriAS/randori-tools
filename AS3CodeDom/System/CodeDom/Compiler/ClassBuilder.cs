@@ -145,18 +145,18 @@ namespace System.CodeDom.Compiler
             decl.Arguments.Add(new CodeAttributeArgument(name, new CodePrimitiveExpression(value)));
         }
 
-        public CodeMemberMethod AddMethod(CodeTypeDeclaration CurrentClass, string name, string type)
+        public CodeMemberMethod AddMethod(CodeTypeDeclaration CurrentClass, string name, string returnType)
         {
             var method = new CodeMemberMethod() { Name = name };
             method.Attributes = method.Attributes | MemberAttributes.Public;
-            method.ReturnType = new CodeTypeReference(type);
+            method.ReturnType = new CodeTypeReference(returnType);
             method.UserData["IsAsterisk"] = false;
             method.UserData["references"] = new CodeCommentStatementCollection();
             method.UserData["ActionscriptName"] = name;
             CurrentClass.Members.Add(method);
-            if (type.ToLower() != "void")
+            if (returnType.ToLower() != "void")
             {
-                method.Statements.Add(new CodeMethodReturnStatement(new CodeDefaultValueExpression(new CodeTypeReference(type))));
+                method.Statements.Add(new CodeMethodReturnStatement(new CodeDefaultValueExpression(new CodeTypeReference(returnType))));
             }
             if (HasFieldWithName(CurrentClass, name))
             {
