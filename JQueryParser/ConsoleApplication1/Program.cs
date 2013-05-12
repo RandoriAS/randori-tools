@@ -14,27 +14,6 @@ namespace ConsoleApplication1
 {
     class Program
     {
-        private static string header = @"/***" + Environment.NewLine +
-@" * Copyright 2013 LTN Consulting, Inc. /dba Digital PrimatesÂ®" + Environment.NewLine +
-@" * " + Environment.NewLine +
-@" * Licensed under the Apache License, Version 2.0 (the 'License');" + Environment.NewLine +
-@" * you may not use this file except in compliance with the License." + Environment.NewLine +
-@" * You may obtain a copy of the License at" + Environment.NewLine +
-@" * " + Environment.NewLine +
-@" * http://www.apache.org/licenses/LICENSE-2.0" + Environment.NewLine +
-@" * " + Environment.NewLine +
-@" * Unless required by applicable law or agreed to in writing, software" + Environment.NewLine +
-@" * distributed under the License is distributed on an 'AS IS' BASIS," + Environment.NewLine +
-@" * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied." + Environment.NewLine +
-@" * See the License for the specific language governing permissions and" + Environment.NewLine +
-@" * limitations under the License." + Environment.NewLine +
-@" * " + Environment.NewLine +
-@" * " + Environment.NewLine +
-@" * !!!! THIS IS A GENERATED FILE, DO NOT MAKE ANY CHANGES TO IT MANUALLY !!!!" + Environment.NewLine +
-@" * The XML files at this location: https://github.com/jquery/api.jquery.com were" + Environment.NewLine +
-@" * used to generate this class" + Environment.NewLine +
-@" * @author Randori JQuery generator" + Environment.NewLine +
-@"*/";
         //Where the .as file will be saved
         public static string OutputDirectory = @"C:\projects\RandoriAS\JQuery\src\randori\jquery\";
 
@@ -91,10 +70,28 @@ namespace ConsoleApplication1
             {
                 SerializeClass(unit, provider);
             }
+            AddJQMethodFile();
 
             Console.WriteLine("Finished, press any key...");
             Console.ReadKey();
 
+        }
+
+        private static void AddJQMethodFile()
+        {
+            var FileName = Path.Combine(OutputDirectory, "jq.as");
+
+            StreamWriter writer = new StreamWriter(FileName, false);
+            writer.WriteLine(StaticStrings.header);
+            try
+            {
+                writer.Write(StaticStrings.jqFile);
+            }
+            finally
+            {
+                writer.Close();
+            }
+            Console.WriteLine("Created file: " + FileName);
         }
 
         private static void AddMethodsToPromise(CodeTypeDeclaration classDefPromise, CodeTypeDeclaration classDefDeferred)
@@ -171,17 +168,17 @@ namespace ConsoleApplication1
             FileName = Path.Combine(OutputDirectory, FileName);
 
             StreamWriter writer = new StreamWriter(FileName, false);
-            writer.WriteLine(header);
+            writer.WriteLine(StaticStrings.header);
             options.IndentString = "\t";
             options.VerbatimOrder = false;
             try
             {
                 provider.GenerateCodeFromCompileUnit(compileUnit, writer, options);
-            }finally
+            }
+            finally
             {
                  writer.Close();
             }
-
             Console.WriteLine("Created file: " + FileName);
         }
 
@@ -303,48 +300,49 @@ namespace ConsoleApplication1
 
         private static CodeTypeDeclaration Entry2Class(string EntryPath)
         {
+            List<CodeTypeDeclaration> declarations = new List<CodeTypeDeclaration>();
             var xdoc = XDocument.Load(EntryPath);
             var FileName = Path.GetFileNameWithoutExtension(EntryPath);
-            ClassNameDef ClassName = CreateClassName(FileName, xdoc);
-            if (ClassName == null)
+            ClassNameDef classNameDef = CreateClassName(FileName, xdoc);
+            if (classNameDef == null)
             {
                 Console.WriteLine("Skipped file: " + FileName);
                 return null;
             }
-            CodeTypeDeclaration CurrentClass = null;
-            if (ClassLookup.ContainsKey(ClassName.ActionScriptName) == false)
+            CodeTypeDeclaration codeTypeDeclaration = null;
+            if (ClassLookup.ContainsKey(classNameDef.ActionScriptName) == false)
             {
-                CurrentClass = Builder.CreateClass(ClassName);
-                ClassLookup[ClassName.ActionScriptName] = CurrentClass;
+                codeTypeDeclaration = Builder.CreateClass(classNameDef);
+                ClassLookup[classNameDef.ActionScriptName] = codeTypeDeclaration;
 
-                if (ClassName.ActionScriptName.IndexOf("Static") > -1)
+                if (classNameDef.ActionScriptName.IndexOf("Static") > -1)
                 {
-                    CurrentClass.TypeAttributes = CurrentClass.TypeAttributes | TypeAttributes.Sealed;
+                    codeTypeDeclaration.TypeAttributes = codeTypeDeclaration.TypeAttributes | TypeAttributes.Sealed;
                 }
             }
             else
             {
-                CurrentClass = ClassLookup[ClassName.ActionScriptName];
+                codeTypeDeclaration = ClassLookup[classNameDef.ActionScriptName];
             }
-            xdoc.Descendants("entry").ToList<XElement>().ForEach(e => AddMember(CurrentClass, e));
-            return CurrentClass;
+            xdoc.Descendants("entry").ToList<XElement>().ForEach(e => AddMember(codeTypeDeclaration, e));
+            return codeTypeDeclaration;
         }
 
         private static ClassNameDef CreateClassName(String FileName, XDocument xdoc)
         {
-            ClassNameDef result = new ClassNameDef();
+            ClassNameDef classNameDef = new ClassNameDef();
             String ClassName = null;
             if (FileName.IndexOf('.') > -1)
             {
                 var parts = FileName.Split('.');
-                if (parts[0] != "jQuery")
+                if (parts[0].ToLower() != "jquery")
                 {
                     ClassName = CapitalizeName(parts[0]);
                 }
                 else
                 {
                     ClassName = "JQueryStatic";
-                    result.JavascriptName = "JQuery";
+                    classNameDef.JavascriptName = "jQuery";
                 }
             }
             else
@@ -352,7 +350,7 @@ namespace ConsoleApplication1
                 if (xdoc.Root.Attributes("return").Count() > 0)
                 {
                     ClassName = CapitalizeName(xdoc.Root.Attribute("return").Value);
-                    result.JavascriptName  = ClassName;
+                    classNameDef.JavascriptName  = ClassName;
                     if (ClassName.Length == 0)
                     {
                         return null;
@@ -362,7 +360,19 @@ namespace ConsoleApplication1
                 {
                     if (xdoc.Root.Name == "entries")
                     {
-                        ClassName = CapitalizeName(xdoc.Root.Elements("entry").ToList<XElement>()[0].Attribute("return").Value);
+                        if (xdoc.Root.Elements("entry").First().Attribute("return") != null)
+                        {
+                            ClassName = CapitalizeName(xdoc.Root.Elements("entry").First().Attribute("return").Value);
+                        }
+                        else if (xdoc.Root.Elements("entry").First().Elements("return").Count() > 0)
+                        {
+                            var types = xdoc.Root.Elements("entry").First().Elements("return");
+                            foreach (var typeElm in types)
+                            {
+                                ClassName = CapitalizeName(TranslateClassName(typeElm.Attribute("type").Value));
+                                break;
+                            }
+                        }
                     }
                     else
                     {
@@ -370,10 +380,13 @@ namespace ConsoleApplication1
                     }
                 }
             }
-            ClassName = TranslateClassName(ClassName);
-            ClassName = CapitalizeName(ClassName);
-            result.ActionScriptName = ClassName;
-            return result;
+            if (ClassName != null)
+            {
+                ClassName = TranslateClassName(ClassName);
+                ClassName = CapitalizeName(ClassName);
+                classNameDef.ActionScriptName = ClassName;
+            }
+            return classNameDef;
         }
 
         private static void AddMember(CodeTypeDeclaration CurrentClass, XElement Elm)
@@ -423,7 +436,24 @@ namespace ConsoleApplication1
         private static void AddProperty(XElement Elm,  CodeTypeDeclaration classDef)
         {
             var Name = Elm.Attribute("name").Value;
-            var type = TranslateType(Elm.Attribute("type").Value);
+            if (Elm.Attribute("type") != null)
+            {
+                var type = Elm.Attribute("type").Value;
+                buildProperty(Elm, classDef, Name, type);
+            }
+            else if (Elm.Elements("type").Count() > 0)
+            {
+                foreach (var typeElm in Elm.Elements("type"))
+                {
+                    var type = typeElm.Attribute("name").Value;
+                    buildProperty(Elm, classDef, Name, type, true);
+                }
+            }
+        }
+
+        private static void buildProperty(XElement Elm, CodeTypeDeclaration classDef, string Name, string type, bool suffixNameWithType=false)
+        {
+            type = TranslateType(type);
             var defaultValue = "";
             if (type == "PlainObject")
             {
@@ -432,6 +462,10 @@ namespace ConsoleApplication1
             if (Elm.Attribute("default") != null)
             {
                 defaultValue = Elm.Attribute("default").Value;
+            }
+            if (suffixNameWithType)
+            {
+                Name += type;
             }
             var field = Builder.AddProperty(classDef, Name, type);
             field.Comments.AddRange(SplitCommentLines(Elm.Element("desc").Value));
@@ -499,9 +533,9 @@ namespace ConsoleApplication1
 
         private static string TranslateType(string type, bool isParameter=false)
         {
-            if ((type == null) ||(type == "") || (type == "undefined"))
+            if ((type == null) || (type == "") || (type == "undefined") || (type.ToLower() == "void"))
             {
-                type = (isParameter == true) ? "*" : "void";
+                return (isParameter == true) ? "*" : "void";
             }
             if (type.IndexOf(' ') > -1)
             {
@@ -536,7 +570,7 @@ namespace ConsoleApplication1
             {
                 return "XMLHttpRequest";
             }
-            else if (type == "Selector")
+            else if ((type.ToLower() == "selector") || (type.ToLower() == "htmlstring"))
             {
                 return "String";
             }
@@ -565,7 +599,24 @@ namespace ConsoleApplication1
             var originalName = Elm.Attribute("name").Value;
             var name = TranslateName(originalName);
             name = UncapitalizeName(name);
-            var originalReturnName = (Elm.Attribute("return") != null) ? Elm.Attribute("return").Value : null;
+            String originalReturnName = null;
+            if ((Elm.Attribute("return") != null))
+            {
+                originalReturnName = Elm.Attribute("return").Value;
+            }
+            else
+            {
+                if (Elm.Elements("return").Count() > 0)
+                {
+                    string[] types = new string[Elm.Elements("return").Count()];
+                    var idx = 0;
+                    foreach (var rtType in Elm.Elements("return"))
+                    {
+                        types[idx++] = rtType.Attribute("type").Value;
+                    }
+                    originalReturnName = String.Join(", ", types);
+                }
+            }
             var type = TranslateType(originalReturnName);
             var desc = Elm.Element("desc").Value.Trim();
             if (name.IndexOf('.') > -1)
@@ -577,15 +628,14 @@ namespace ConsoleApplication1
                 originalName = originalName.Substring(originalName.IndexOf('.') + 1);
             }
             int cnt = Elm.Elements("signature").Count();
-            int index = 0;
             Elm.Elements("signature").ToList<XElement>().ForEach(e => CreateMethod(desc, CurrentClass, type, name, originalName, originalReturnName, e));
         }
 
-        private static void CreateMethod(string description, CodeTypeDeclaration CurrentClass, String type, string name, string originalName, string originalReturnName, XElement elm)
+        private static void CreateMethod(string description, CodeTypeDeclaration CurrentClass, String returnType, string name, string originalName, string originalReturnName, XElement elm)
         {
             var since = (elm.Element("added") != null) ? elm.Element("added").Value : null;
 
-            var method = Builder.AddMethod(CurrentClass, name, type);
+            var method = Builder.AddMethod(CurrentClass, name, returnType);
             
             method.Comments.AddRange(SplitCommentLines(description));
             if (since != null)
@@ -594,7 +644,6 @@ namespace ConsoleApplication1
             }
             if (elm.Elements("argument").Count() > 0)
             {
-
                 elm.Elements("argument").ToList<XElement>().ForEach(e => CreateParameter(e, method));
             }
             else
@@ -605,7 +654,7 @@ namespace ConsoleApplication1
             {
                 Builder.AddMethodAttributeArgument(method, "name", originalName);
             }
-            if ((type != originalReturnName) && ((originalReturnName == null) || (originalReturnName.IndexOf(',') > -1)))
+            if ((returnType != originalReturnName) && ((originalReturnName == null) || (originalReturnName.IndexOf(',') > -1)))
             {
                 method.ReturnType = new CodeTypeReference("Object");
                 method.UserData["IsAsterisk"] = true;
