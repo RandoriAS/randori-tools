@@ -31,12 +31,11 @@ namespace ConsoleApplication1
 @" * @author Randori JQuery generator" + Environment.NewLine +
 @"*/";
 
-        public static string jqFile = @"package randori.jquery {" + Environment.NewLine +
+        public static string jqFile = @"package randori.jquery.func {" + Environment.NewLine +
 @"" + Environment.NewLine +
 @"  import randori.jquery.JQuery;" + Environment.NewLine +
 @"" + Environment.NewLine +
-@"	[JavaScriptMethod(name=""jQuery"")]" + Environment.NewLine +
-@"	public function jq(...args):JQuery" + Environment.NewLine +
+@"	public function jQuery(...args):JQuery" + Environment.NewLine +
 @"	{" + Environment.NewLine +
 @"		return null;" + Environment.NewLine +
 @"	}" + Environment.NewLine +

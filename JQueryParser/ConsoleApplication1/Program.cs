@@ -79,7 +79,9 @@ namespace ConsoleApplication1
 
         private static void AddJQMethodFile()
         {
-            var FileName = Path.Combine(OutputDirectory, "jq.as");
+            var funcDirectory = Path.Combine(OutputDirectory, "func");
+            Directory.CreateDirectory(funcDirectory);
+            var FileName = Path.Combine(funcDirectory, "jQuery.as");
 
             StreamWriter writer = new StreamWriter(FileName, false);
             writer.WriteLine(StaticStrings.header);
