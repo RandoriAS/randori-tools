@@ -8,6 +8,13 @@
 	</s:layout>
 	<fx:Script>
 		<![CDATA[
+			/*
+				THE INPUT HTML FOR THIS GENERATOR WAS DOWNLOADED HERE:
+				http://documentcloud.github.io/underscore/
+				The version at that time was 1.4.4
+			*/
+			
+			
 			import mx.events.FlexEvent;
 			import mx.utils.StringUtil;
 			
