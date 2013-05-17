@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   applicationComplete="windowedapplication1_applicationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.utils.StringUtil;
+			
+			import methods.toXML;
+			
+			import raix.reactive.IObservable;
+			import raix.reactive.ISubject;
+			import raix.reactive.Observable;
+			
+			private static const keywords:Array = ["get", "set", "on", "with", "if","else","function","class","import","private","public","protected","break","continue"];
+			
+			private static const html:String = '<body>\
+				<script type="text/javascript">\
+				window.soup = function(tags)\
+				{\
+				var div = document.createElement("div");\
+				div.innerHTML = tags;\
+				return div.innerHTML;\
+				}\
+				</script>\
+				</body>';
+			private static const OUTPUT_DIR:String = "C:\\projects\\Randori Framework\\randori-libraries\\EmberJS\\src\\Ember\\";
+			
+			private var _file:File;
+			private var _loaderQueue:ISubject;
+			private var _loaderQueueSubscription:Object;
+			protected function sourceSelect_clickHandler(event:MouseEvent):void
+			{
+				_file = new File();
+				_file.addEventListener(Event.SELECT, handleSourceSelection);
+				_file.addEventListener(Event.CANCEL, handleCancelation);
+				_file.browseForDirectory("Select Ember HTML sources");
+			}
+			
+			protected function handleCancelation(event:Event):void {
+				cleanUpBrowseListeners();
+			}
+			
+			protected function handleSourceSelection(event:Event):void {
+				cleanUpBrowseListeners();
+				filePath.text = _file.nativePath;
+				var htmlFiles:Array = filterHTMLFiles(_file.getDirectoryListing());
+				var classNames:Array = htmlFiles.map(function(file:File, index:int, array:Array):String {
+					return file.name.replace(file.type, "");
+				});
+				processHTMLFiles(htmlFiles, classNames);
+			}
+			
+			private function cleanUpBrowseListeners():void {
+				_file.removeEventListener(Event.SELECT, handleSourceSelection);
+				_file.removeEventListener(Event.CANCEL, handleCancelation);
+			}
+			
+			private function cleanUpInput(contents:String):XML
+			{
+				return toXML(contents);
+			}
+			
+			protected function windowedapplication1_applicationCompleteHandler(event:FlexEvent):void
+			{
+				maximize();
+			}			
+			
+			private function filterHTMLFiles(files:Array):Array
+			{
+				return files.filter(function(file:File, index:int, array:Array):Boolean {
+					return file.extension == "html";
+				});
+				
+			}
+			
+			private function processHTMLFiles(htmlFiles:Array, classNames:Array):void
+			{
+				reports.text = "";
+				var index:int = 0;
+				Observable.fromArray(htmlFiles)
+						.map(function(file:File):String {
+							var contents:String = loadFile(file);
+							reports.text += "Loaded and processing " + file.name + "\n";
+							return contents.substr("<!DOCTYPE html>".length+1, contents.length);
+				}).mapMany(sanitizeHTML)
+				  .map(function(event:Event):XML {
+					progress.setProgress(index++, htmlFiles.length);
+					var loader:HTMLLoader = event.target as HTMLLoader;
+					var content:String = loader.window.soup(loader.name);
+					content = content.replace(/<img[^>]+>/g,"").replace(/<input[^>]+>/g,"");
+					content = content.replace(/<br>/g, "");
+					try {
+						return new XML("<body>" + content + "</body>");
+					} catch(e:Error) {
+						reports.text = content;
+						throw e;
+					}
+					return null;
+				  })
+				  .map(createClassFile)
+				.subscribe(null, function():void{
+					reports.text += "Finished";
+					}, function(error:Error):void{
+					reports.text = error.message;
+					reports.text += error.getStackTrace();
+				});
+			}
+			
+			private function createClassFile(html:XML):String {
+				var packageName:String = html..h1[0].text();
+				var parts:Array = packageName.split(' ');
+				packageName = parts[0];
+				packageName = StringUtil.trim(packageName);
+				parts = packageName.split('.');
+				var className:String = parts[parts.length-1];
+				if (className == "Mixin") {
+					return "";
+				}
+				packageName = "ember";
+				var output:Vector.<String> = new Vector.<String>();
+				output[output.length] = "package " + packageName.toLowerCase() + " {";
+				output[output.length] = "";
+				output[output.length] = "\timport randori.webkit.dom.Element;";
+				output[output.length] = "";
+				createClassBody(output, className, html, packageName);
+				output[output.length] = "}";
+				var file:File = new File();
+				if (className == "Array") {
+					className = "EmberArray";
+				} else if (className == "Function") {
+					className = "EmberFunction";
+				} else if (className == "Object") {
+					className = "EmberObject";
+				} else if (className == "String") {
+					className = "EmberString";
+				}
+				file.nativePath = OUTPUT_DIR + className + ".as";
+				var fileStream:FileStream = new FileStream(); 
+				fileStream.open(file, FileMode.WRITE);
+				fileStream.writeMultiByte(output.join("\n"), "utf-8");
+				fileStream.close();
+				return "";
+			}
+			
+			private function sanitizeHTML(fileContent:String):IObservable {
+				var loader:HTMLLoader = new HTMLLoader();
+				loader.name = fileContent;
+				var dispatcher:EventDispatcher = new EventDispatcher();
+				var observable:IObservable = Observable.fromEvent(loader, Event.COMPLETE);
+				observable.subscribe(null)			
+				loader.loadString(html);
+				return observable;
+			}
+			
+			private function loadFile(file:File):String
+			{
+				var prefsXML:String;
+				var fileStream:FileStream = new FileStream();
+				try {
+					fileStream.open(file, FileMode.READ); 
+					prefsXML = fileStream.readUTFBytes(fileStream.bytesAvailable);
+				} finally {
+					fileStream.close();
+				}
+				return prefsXML;
+			}
+			
+		
+			private function createClassBody(output:Vector.<String>, className:String, html:XML, packageName:String):void
+			{
+				var JSName:String = packageName + "." + className;
+				output[output.length] = "\t[JavaScript(export=\"false\",name=\"" + JSName + "\")]";
+				var classIndex:int = output.length;
+				if (className == "Array") {
+					className = "EmberArray";
+				} else if (className == "Function") {
+					className = "EmberFunction";
+				} else if (className == "Object") {
+					className = "EmberObject";
+				} else if (className == "String") {
+					className = "EmberString";
+				}
+				output[output.length] = "\tpublic class " + className + " {";
+				var properties:Vector.<XML> = extractProperties(html);
+				addProperties(output, properties, className);
+				var nonPrivateMethods:Vector.<XML> = extractNonPrivateMethods(html);
+				var methodNames:Vector.<String> = addMethods(output, nonPrivateMethods, className);
+				output[output.length] = "\t}";
+				if (methodNames.indexOf("create") > -1) {
+					var metadata:String = "\t[JavaScriptConstructor(factoryMethod=\"" + JSName + ".create(...args)\")]";
+					output.splice(classIndex, 0, metadata);
+				}
+			}
+			
+			private function extractNonPrivateMethods(html:XML):Vector.<XML>
+			{
+				var nonPrivateMethods:Vector.<XML> = new Vector.<XML>();
+				var methodsDiv:XML = html..div.(attribute("id") == "methods")[0];
+				if (methodsDiv != null) {
+					var methodDivs:XMLList = methodsDiv..div.(attribute("class").toString().substr(0, "method".length) == "method");
+					for each(var methodXML:XML in methodDivs){
+						if (methodXML.attribute("class").toString().indexOf("private") < 0) {
+							nonPrivateMethods[nonPrivateMethods.length] = methodXML;
+						}
+					}
+				}
+				return nonPrivateMethods;
+			}
+			
+			private function addMethods(output:Vector.<String>, nonPrivateMethods:Vector.<XML>, className:String):Vector.<String>
+			{
+				var names:Vector.<String> = new Vector.<String>();
+				for each(var methodXML:XML in nonPrivateMethods){
+					names[names.length] = addMethod(output, methodXML, className);
+				}
+				return names;
+			}
+			
+			private function addMethod(output:Vector.<String>, methodXML:XML, className:String):String
+			{
+				var methodName:String = methodXML.attribute("id");
+				var static:String = " ";
+				if (methodXML.span.(attribute("class") == "flag static").length() > 0) {
+					static = " static "
+				}
+				methodName = methodName.substr("method_".length, methodName.length);
+				if (keywords.indexOf(methodName) > -1) {
+					output[output.length] = "[JavaScriptMethod(name=\"" + methodName + "\")]";
+					methodName += "_";
+				}
+				var params:Vector.<String> = extraParams(methodXML);
+				var returnType:String = className;
+				if (methodName != "create") {
+					returnType = extraReturnType(methodXML);
+				} else {
+					addConstructor(output, className);
+					returnType = translateType(returnType);
+				}
+				addMethodASDoc(output, methodXML);
+				output[output.length] = "\t\tpublic" + static + "function " + methodName + "(" + params.join(", ") + "):" + returnType + " {";
+				addMethodBody(output, returnType);
+				output[output.length] = "\t\t}";
+				output[output.length] = "";
+				return methodName;
+			}
+			
+			private function extraParams(methodXML:XML):Vector.<String> {
+				var result:Vector.<String> = new Vector.<String>();
+				var paramsXML:XMLList = methodXML..div.(attribute("class") == "params").dl.dt;
+				for each(var paramXML:XML in paramsXML) {
+					result[result.length] = extractParam(paramXML);
+				}
+				return result;
+			}
+			
+			private function extraReturnType(methodXML:XML):String
+			{
+				if (methodXML..div.(attribute("class") == "return").length() > 0)
+				{
+					var div:XML = methodXML..div.(attribute("class") == "return")[0];
+					var returnType:String = div..span.(attribute("class") == "type")[0].text();
+					return translateType(returnType);
+				}
+				return "void";
+			}
+			
+			private function extractParam(paramXML:XML):String
+			{
+				var paramName:String = paramXML.strong.text();
+				if (paramName == "function") {
+					paramName = "func";
+				}
+				return paramName + ":" + extractParamType(paramXML.span);
+			}
+			
+			private function extractParamType(typeSpan:XMLList):String {
+				var val:String;
+				if (typeSpan.a.length() > 0) {
+					val = typeSpan.a.text();
+				} else {
+					val = typeSpan.text();
+				}
+				val = translateType(val);
+				return val;
+			}
+			
+			private function addConstructor(output:Vector.<String>, className:String):void
+			{
+				output[output.length] = "\t\t/**";
+				output[output.length] = "\t\t * Creates a new <code>" + className + "</code> instance.";
+				output[output.length] = "\t\t */";
+				output[output.length] = "\t\tpublic function " + className + "(arguments:Object) {";
+				output[output.length] = "\t\t}";
+				output[output.length] = "";
+			}
+			
+			private function addMethodASDoc(output:Vector.<String>, methodXML:XML):void
+			{
+				var description:XMLList = methodXML.div.(attribute("class") == "description");
+				if (description.length() > 0) {
+					var lines:Array = description.children().toXMLString().split("\n");
+					output[output.length] = "\t\t/**";
+					for each(var line:String in lines) {
+						output[output.length] = "\t\t * " + line;
+					}
+					output[output.length] = "\t\t */";
+				}
+			}
+			
+			private function extractProperties(html:XML):Vector.<XML>
+			{
+				var properties:Vector.<XML> = new Vector.<XML>();
+				var propertiesDiv:XML = html..div.(attribute("id") == "properties")[0];
+				if (propertiesDiv != null) {
+					var propertyDivs:XMLList = propertiesDiv..div.(attribute("class").toString().substr(0, "property".length) == "property");
+					for each(var propertyXML:XML in propertyDivs){
+						properties[properties.length] = propertyXML;
+					}
+				}
+				return properties;
+			}
+			
+			private function addProperties(output:Vector.<String>, properties:Vector.<XML>, className:String):void
+			{
+				for each(var propertyXML:XML in properties) {
+					addProperty(output, propertyXML);
+				}
+				
+			}
+			
+			private function addProperty(output:Vector.<String>, propertyXML:XML):void
+			{
+				var description:Vector.<String> = new Vector.<String>();
+				//<div class="description">
+				if (propertyXML..div.(attribute("class") == "description").length() > 0) {
+					extractDescription(description, propertyXML..div.(attribute("class") == "description")[0]);
+				}
+				for each(var line:String in description) {
+					output[output.length] = line;
+				}
+				var propertyName:String = propertyXML.attribute("id");
+				propertyName = propertyName.substr("property_".length, propertyName.length);
+				var type:XML = propertyXML.span.(attribute("class") == "type")[0];
+				var typeStr:String = "";
+				if (type == null) {
+					typeStr = "Object";
+				} else {
+					if (type.a.length() > 0) {
+						typeStr = type.a.text();
+					} else {
+						typeStr = type.text();
+					}
+				}
+				typeStr = translateType(typeStr);
+				if (propertyName == "_") {
+					typeStr = "Array";
+				}
+				if (propertyName == "Boolean") {
+					output[output.length] = "\t\t[JavaScriptProperty(name=\"Boolean\")]";
+					propertyName = "boolean"
+				}
+				output[output.length] = "\t\tpublic var " + propertyName + ":" + typeStr + ";";
+				output[output.length] = "";
+			}
+			/*
+			<span class="type">
+			<a href="/api/classes/Ember.EventDispatcher.html">Ember.EventDispatcher</a>
+			</span>;
+			*/
+			
+			/*<div id="property_concatenatedProperties" class="property inherited item-entry" style="">
+			<h3 data-id="property_concatenatedProperties" class="name anchorable-toc"><a class="toc-anchor" href="#property_concatenatedProperties"></a><code>concatenatedProperties</code></h3>
+			
+			
+			<span class="type">Array</span>
+			
+			
+			
+			
+			
+			
+			
+			<div class="meta">
+			
+			
+			Inherited from
+			<a href="/api/classes/Ember.Namespace.html#method_concatenatedProperties">Ember.Namespace</a>
+			
+			
+			<a class="api-file-link" href="https://github.com/emberjs/ember.js/tree/v1.0.0-rc.3/packages/ember-runtime/lib/system/core_object.js#L197">packages/ember-runtime/lib/system/core_object.js:197</a>
+			
+			
+			
+			
+			</div>
+			
+			
+			<div class="description">
+			<p>Defines the properties that will be concatenated from the superclass
+			(instead of overridden).</p>
+			
+			<p>By default, when you extend an Ember class a property defined in
+			the subclass overrides a property with the same name that is defined
+			in the superclass. However, there are some cases where it is preferable
+			to build up a property's value by combining the superclass' property
+			value with the subclass' value. An example of this in use within Ember
+			is the <code>classNames</code> property of <code>Ember.View</code>.</p>
+			
+			<p>Here is some sample code showing the difference between a concatenated
+			property and a normal one:</p>
+			<div class="highlight javascript "><div class="ribbon"></div><div class="scroller"><table class="CodeRay"><tbody><tr>
+			<td class="line-numbers" title="double click to toggle" ondblclick="with (this.firstChild.style) { display = (display == '') ? 'none' : '' }"><pre>1
+			2
+			3
+			4
+			5
+			6
+			7
+			8
+			9
+			<strong>10</strong>
+			11
+			12
+			13
+			</pre></td>
+			<td class="code"><pre>App.BarView = Ember.View.extend({
+			<span class="key">someNonConcatenatedProperty</span>: [<span class="string"><span class="delimiter">'</span><span class="content">bar</span><span class="delimiter">'</span></span>],
+			<span class="key">classNames</span>: [<span class="string"><span class="delimiter">'</span><span class="content">bar</span><span class="delimiter">'</span></span>]
+			});
+			
+			App.FooBarView = App.BarView.extend({
+			<span class="key">someNonConcatenatedProperty</span>: [<span class="string"><span class="delimiter">'</span><span class="content">foo</span><span class="delimiter">'</span></span>],
+			<span class="key">classNames</span>: [<span class="string"><span class="delimiter">'</span><span class="content">foo</span><span class="delimiter">'</span></span>],
+			});
+			
+			<span class="keyword">var</span> fooBarView = App.FooBarView.create();
+			fooBarView.get(<span class="string"><span class="delimiter">'</span><span class="content">someNonConcatenatedProperty</span><span class="delimiter">'</span></span>); <span class="comment">// ['foo']</span>
+			fooBarView.get(<span class="string"><span class="delimiter">'</span><span class="content">classNames</span><span class="delimiter">'</span></span>); <span class="comment">// ['ember-view', 'bar', 'foo']</span>
+			</pre></td>
+			</tr></tbody></table>
+			</div></div>
+			<p>This behavior extends to object creation as well. Continuing the
+			above example:</p>
+			<div class="highlight javascript "><div class="ribbon"></div><div class="scroller"><table class="CodeRay"><tbody><tr>
+			<td class="line-numbers" title="double click to toggle" ondblclick="with (this.firstChild.style) { display = (display == '') ? 'none' : '' }"><pre>1
+			2
+			3
+			4
+			5
+			6
+			</pre></td>
+			<td class="code"><pre><span class="keyword">var</span> view = App.FooBarView.create({
+			<span class="key">someNonConcatenatedProperty</span>: [<span class="string"><span class="delimiter">'</span><span class="content">baz</span><span class="delimiter">'</span></span>],
+			<span class="key">classNames</span>: [<span class="string"><span class="delimiter">'</span><span class="content">baz</span><span class="delimiter">'</span></span>]
+			})
+			view.get(<span class="string"><span class="delimiter">'</span><span class="content">someNonConcatenatedProperty</span><span class="delimiter">'</span></span>); <span class="comment">// ['baz']</span>
+			view.get(<span class="string"><span class="delimiter">'</span><span class="content">classNames</span><span class="delimiter">'</span></span>); <span class="comment">// ['ember-view', 'bar', 'foo', 'baz']</span>
+			</pre></td>
+			</tr></tbody></table>
+			</div></div>
+			<p>Adding a single property that is not an array will just add it in the array:</p>
+			<div class="highlight javascript "><div class="ribbon"></div><div class="scroller"><table class="CodeRay"><tbody><tr>
+			<td class="line-numbers" title="double click to toggle" ondblclick="with (this.firstChild.style) { display = (display == '') ? 'none' : '' }"><pre>1
+			2
+			3
+			4
+			</pre></td>
+			<td class="code"><pre><span class="keyword">var</span> view = App.FooBarView.create({
+			<span class="key">classNames</span>: <span class="string"><span class="delimiter">'</span><span class="content">baz</span><span class="delimiter">'</span></span>
+			})
+			view.get(<span class="string"><span class="delimiter">'</span><span class="content">classNames</span><span class="delimiter">'</span></span>); <span class="comment">// ['ember-view', 'bar', 'foo', 'baz']</span>
+			</pre></td>
+			</tr></tbody></table>
+			</div></div>
+			<p>Using the <code>concatenatedProperties</code> property, we can tell to Ember that mix
+			the content of the properties.</p>
+			
+			<p>In <code>Ember.View</code> the <code>classNameBindings</code> and <code>attributeBindings</code> properties
+			are also concatenated, in addition to <code>classNames</code>.</p>
+			
+			<p>This feature is available for you to use throughout the Ember object model,
+			although typical app developers are likely to use it infrequently.</p>
+			
+			</div>
+			
+			
+			<p>
+			
+			<strong>Default:</strong> <code>null</code>
+			
+			</p>
+			</div>
+			*/			
+			
+			private function translateType(typeString:String):String
+			{
+				typeString = StringUtil.trim(typeString);
+				typeString = typeString.replace("Ember.", "");
+				if ((typeString) && (typeString.length == 0)) {
+					typeString = null;
+				} else if ((typeString) && ((typeString.indexOf("|") > -1) || (typeString.indexOf(" ") > -1))) {
+					typeString = "*";
+				} else if (typeString == "Hash") {
+					typeString = null;
+				} else if (typeString == "Namespace") {
+					typeString = "ember.Namespace";
+				} else if (typeString.substr(0,1) == "_") {
+					typeString = typeString.substr(1, typeString.length);
+				} else if ((typeString == "Integer") || (typeString == "number")) {
+					typeString = "int";
+				} else if (typeString == "DOMElement") {
+					typeString = "Element";
+				} else if (typeString == "Void") {
+					typeString = "void";
+				}
+				typeString = (typeString) ? typeString : "Object";
+				typeString = typeString.replace('...','');
+				return typeString;
+			}
+			
+			private function addMethodBody(output:Vector.<String>, returnType:String):void
+			{
+				if (returnType != "void") {
+					if (returnType == "Boolean") {
+						output[output.length] = "\t\t\treturn false;"
+					} else if (returnType == "int") {
+						output[output.length] = "\t\t\treturn 0;"
+					} else {
+						output[output.length] = "\t\t\treturn null;"
+					}
+				}
+			}
+			
+			private function extractDescription(description:Vector.<String>, descriptionXML:XML):void
+			{
+				var arr:Array = descriptionXML.children().toXMLString().split('\n');
+				description[description.length] = "\t\t/**";
+				for each(var line:String in arr) {
+					description[description.length] = "\t\t * " + line;
+				}
+				description[description.length] = "\t\t */";
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<s:HGroup width="100%" height="100%">
+		<s:TextArea width="100%" editable="false" id="reports" height="100%"/>
+	</s:HGroup>
+	<s:HGroup width="100%">
+		<s:Button id="sourceSelect" label="Select EmberJS HTML folder" click="sourceSelect_clickHandler(event)"/>
+		<s:Label id="filePath"/>
+		<mx:ProgressBar width="100%" id="progress"/>
+	</s:HGroup>
+</s:WindowedApplication>
