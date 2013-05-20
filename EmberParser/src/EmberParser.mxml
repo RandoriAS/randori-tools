@@ -12,7 +12,6 @@
 			import methods.toXML;
 			
 			import raix.reactive.IObservable;
-			import raix.reactive.ISubject;
 			import raix.reactive.Observable;
 			
 			private static const keywords:Array = ["get", "set", "on", "with", "if","else","function","class","import","private","public","protected","break","continue"];
@@ -27,11 +26,9 @@
 				}\
 				</script>\
 				</body>';
-			private static const OUTPUT_DIR:String = "C:\\projects\\Randori Framework\\randori-libraries\\EmberJS\\src\\Ember\\";
+			private static const OUTPUT_DIR:String = "C:\\projects\\Randori Framework\\randori-libraries\\EmberJS\\src\\ember\\";
 			
 			private var _file:File;
-			private var _loaderQueue:ISubject;
-			private var _loaderQueueSubscription:Object;
 			protected function sourceSelect_clickHandler(event:MouseEvent):void
 			{
 				_file = new File();
@@ -149,7 +146,6 @@
 			private function sanitizeHTML(fileContent:String):IObservable {
 				var loader:HTMLLoader = new HTMLLoader();
 				loader.name = fileContent;
-				var dispatcher:EventDispatcher = new EventDispatcher();
 				var observable:IObservable = Observable.fromEvent(loader, Event.COMPLETE);
 				observable.subscribe(null)			
 				loader.loadString(html);
@@ -168,7 +164,6 @@
 				}
 				return prefsXML;
 			}
-			
 		
 			private function createClassBody(output:Vector.<String>, className:String, html:XML, packageName:String):void
 			{
