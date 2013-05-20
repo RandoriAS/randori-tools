@@ -728,21 +728,32 @@ namespace WebIDLParser
                     {
                         continue;
                     }
-                    if (hasDifferentParamNames(doubles))
+                    if (HasDifferentParamNames(doubles))
                     {
                         var index = 0;
                         foreach (TMethod method in doubles)
                         {
                             method.aliasName = method.name;
-                            method.name += (index++).ToString();
+                            method.name += (++index).ToString();
                         }
                     }
                     else
                     {
                         var ordered = doubles.OrderByDescending(c => c.parameters.Count());
+                        var optionalCount = -1;
                         for (var i = 1; i < ordered.Count(); i++)
                         {
+                            if (i == 1)
+                            {
+                                optionalCount = ordered.ElementAt(i).parameters.Count();
+                            }
                             members.Remove(ordered.ElementAt(i));
+                        }
+                        var parameters = ordered.ElementAt(0).parameters;
+                        var startIndex = parameters.Count() - optionalCount;
+                        for (var i = startIndex; i < parameters.Count(); i++)
+                        {
+                            parameters.ElementAt(i).MakeOptional();
                         }
                     }
                 }
@@ -798,7 +809,7 @@ namespace WebIDLParser
             return name + result;
         }
 
-        private bool hasDifferentParamNames(IEnumerable<TMethod> methods)
+        private bool HasDifferentParamNames(IEnumerable<TMethod> methods)
         {
             methods = methods.OrderByDescending(c => c.parameters.Count());
             TParameterList parameters = null;
@@ -806,9 +817,9 @@ namespace WebIDLParser
             {
                 if (parameters != null)
                 {
-                    for (var i = 0; i < parameters.Count(); i++)
+                    for (var i = 0; i < method.parameters.Count(); i++)
                     {
-                        if ((parameters.Count() < i) && ((method.parameters[i].name != parameters[i].name) || (method.parameters[i].type.name != parameters[i].type.name)))
+                        if ((method.parameters[i].name != parameters[i].name) || (method.parameters[i].type.name != parameters[i].type.name))
                         {
                             return true;
                         }
@@ -1278,12 +1289,13 @@ namespace WebIDLParser
                     var def = attr.value.Substring("DefaultIs".Length).ToLower();
                     if (def.StartsWith("null"))
                     {
-                        def = "null";
+                        def = "undefined";
                     }
                     return def;
                 }
             }
-            if ((resultType.isArray) || (resultType.genericType != null))
+            result = "undefined";
+            /*if ((resultType.isArray) || (resultType.genericType != null))
             {
                 return "null";
             }
@@ -1303,7 +1315,7 @@ namespace WebIDLParser
                 default:
                     result = "null";
                     break;
-            }
+            }*/
             return result;
         }
     }
@@ -1368,6 +1380,14 @@ namespace WebIDLParser
             //if (isOptional()) {
             //  sb.Append(" = default(" + type.ToString() + ")");
             //}
+        }
+
+        internal void MakeOptional()
+        {
+            if (isOptional() == false)
+            {
+                attributes.Add(new TNameAttribute() { name = "Optional" });
+            }
         }
     }
 
