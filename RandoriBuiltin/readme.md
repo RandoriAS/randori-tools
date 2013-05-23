@@ -13,7 +13,7 @@ catalog.xml
 
 Open his file in a text editor and find the two XML elements that look like this (usually at the bottom of the file):
 
-&lt;<script name="flash/display/Sprite" mod="1369328922099" signatureChecksum="3914207921" &gt;
+&lt;script name="flash/display/Sprite" mod="1369328922099" signatureChecksum="3914207921" &gt;
 &lt;def id="flash.display:Sprite" /&gt; 
 &lt;dep id="AS3" type="n" /&gt; 
 &lt;dep id="Object" type="i" /&gt; 
