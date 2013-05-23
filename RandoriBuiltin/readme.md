@@ -12,7 +12,7 @@ Then run "ant" on a commandline (in the directory of the build.xml file).
 After the builtin.swc is created, open the SWC with a Zip or Rar editor and extract this file:
 catalog.xml
 
-Open his file in a text editor and find the two XML elements that look like this (usually at the bottom of the file):
+Open this file in a text editor and find the two XML elements that look like this (usually at the bottom of the file):
 
 **&lt;script name="flash/display/Sprite" mod="1369328922099" signatureChecksum="3914207921" &gt;**
 
