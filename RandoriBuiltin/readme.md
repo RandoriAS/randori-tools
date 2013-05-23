@@ -14,17 +14,25 @@ catalog.xml
 
 Open his file in a text editor and find the two XML elements that look like this (usually at the bottom of the file):
 
-**&lt;script name="flash/display/Sprite" mod="1369328922099" signatureChecksum="3914207921" &gt;
+**&lt;script name="flash/display/Sprite" mod="1369328922099" signatureChecksum="3914207921" &gt;**
 
-&lt;def id="flash.display:Sprite" /&gt; 
-&lt;dep id="AS3" type="n" /&gt; 
-&lt;dep id="Object" type="i" /&gt; 
-&lt;/script&gt;
-&lt;script name="_043da8af9560b800626e55e447d48647698342236e3501548f6c26b82157ef1a_flash_display_Sprite" mod="1369328980902" signatureChecksum="1125283663" &gt;
-&lt;def id="_043da8af9560b800626e55e447d48647698342236e3501548f6c26b82157ef1a_flash_display_Sprite" /&gt; 
-&lt;dep id="AS3" type="n" /&gt; 
-&lt;dep id="flash.display:Sprite" type="i" /&gt; 
-&lt;/script&gt;**
+**&lt;def id="flash.display:Sprite" /&gt;**
+
+**&lt;dep id="AS3" type="n" /&gt;**
+
+**&lt;dep id="Object" type="i" /&gt;**
+
+**&lt;/script&gt;**
+
+**&lt;script name="_043da8af9560b800626e55e447d48647698342236e3501548f6c26b82157ef1a_flash_display_Sprite" mod="1369328980902" signatureChecksum="1125283663" &gt;**
+
+**&lt;def id="_043da8af9560b800626e55e447d48647698342236e3501548f6c26b82157ef1a_flash_display_Sprite" /&gt;**
+
+**&lt;dep id="AS3" type="n" /&gt;**
+
+**&lt;dep id="flash.display:Sprite" type="i" /&gt;**
+
+**&lt;/script&gt;**
 
 Delete this entire block of text, save the file and replace it inside the builtin.swc file.
 
