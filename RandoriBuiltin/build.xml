@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="foobar" default="main" basedir=".">
+
+    
+    <target name="define-constants">
+        <property name="FLEX_HOME" value="C:/Program Files (x86)/Adobe/Adobe Flash Builder 4.6/sdks/4.9.1/" />
+    </target>
+
+
+    <target name="define-tasks">
+        <taskdef resource="flexTasks.tasks" classpath="${FLEX_HOME}/ant/lib/flexTasks.jar" />
+    </target>
+
+    <target name="main" depends="define-constants,define-tasks,build">
+    </target>
+
+
+    <target name="after">
+    </target>
+
+    <target name="build" depends="builtin">
+    </target>
+
+    <target name="builtin">
+        <compc output="builtin.swc" target-player="10.2.0">
+            <strict>false</strict>
+            <optimize>true</optimize>
+            <warnings>true</warnings>
+            <verbose-stacktraces>true</verbose-stacktraces>
+            <compute-digest>false</compute-digest>
+	    <load-config filename="${basedir}/randori-builtin-config.xml"/>
+            <source-path path-element="${basedir}/as3_src" />
+	    <include-sources dir="${basedir}/randori" includes="builtin.as Math.as Date.as RegExp.as"/>
+        </compc>
+
+    </target>
+</project>
