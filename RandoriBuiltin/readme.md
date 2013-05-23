@@ -7,7 +7,7 @@ Edit the build.xml first and change this element:
 
 to reflect the location of your local Flex SDK.
 
-Then run "ant" on a commandline.
+Then run "ant" on a commandline (in the directory of the build.xml file).
 
 After the builtin.swc is created, opened the SWC with a zip or Rar editor and extract this file:
 catalog.xml
