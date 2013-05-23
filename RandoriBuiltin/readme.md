@@ -1,4 +1,5 @@
-Usage:
+How to generate a builtin.swc
+=============
 
 edit the build.xml first and change this element:
 
