@@ -35,7 +35,7 @@ namespace WebIDLParser
         public static string w3cDirectory = @"D:\w3c\";
 
         //Path to the existing project HTMLCoreLib project
-        public static string csOutDirectory = @"C:\projects\Randori Framework\Libraries\HTMLCoreLib\src\randori\webkit\";
+        public static string csOutDirectory = @"C:\projects\Randori Framework\randori-libraries\HTMLCoreLib\src\randori\webkit\";
 
         //Path to the WebKit(--> WebCore) sources. ( http://trac.webkit.org/browser/trunk/Source/WebCore/ )
         public static string idlInDirectory = @"C:\projects\WebCore\";
@@ -89,6 +89,11 @@ namespace WebIDLParser
             Transformations.changeDelegateResultType("PositionErrorCallback", "void");
 
             Transformations.renameType("Event", "DomEvent");
+
+            var resolutionProperty = new TProperty(null) { name = "resolution", resultType = new TType() { name = "int"}, canRead = true, canWrite = false };
+            Transformations.addPropertyToType("ImageData", resolutionProperty);
+            var dataProperty = new TProperty(null) { name = "data", resultType = new TType() { name = "uint", genericType = new TType() { name="uint" } }, canRead = true, canWrite = false };
+            Transformations.addPropertyToType("ImageData", dataProperty);
 
             var jsonMethod = new TMethod(null);
             jsonMethod.name = "JSON";

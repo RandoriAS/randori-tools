@@ -15,6 +15,7 @@ namespace WebIDLParser
         public static Dictionary<string, string> generateElementConstructorCorrectName = new Dictionary<string, string>();
         public static Dictionary<string, string> changeDelegateResultType = new Dictionary<string, string>();
         public static Dictionary<string, List<TMethod>> addMethodToType = new Dictionary<string, List<TMethod>>();
+        public static Dictionary<string, List<TProperty>> addPropertyToType = new Dictionary<string, List<TProperty>>();
     }
 
     public static class Transformations
@@ -63,6 +64,16 @@ namespace WebIDLParser
             }
             var list = TransformationConfig.addMethodToType[TypeName];
             list.Add(Method);
+        }
+
+        public static void addPropertyToType(string TypeName, TProperty Property)
+        {
+            if (TransformationConfig.addPropertyToType.ContainsKey(TypeName) == false)
+            {
+                TransformationConfig.addPropertyToType[TypeName] = new List<TProperty>();
+            }
+            var list = TransformationConfig.addPropertyToType[TypeName];
+            list.Add(Property);
         }
 
     }

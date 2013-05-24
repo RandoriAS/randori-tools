@@ -337,6 +337,7 @@ namespace WebIDLParser
                             mem.name = name;
                             mem.resultType = type;
                             mem.attributes = attrList;
+                            mem.isStatic = vStatic;
                             readParameters((TMethod)mem);
                             checkGotoEndOfStatement();
                         }
@@ -351,6 +352,7 @@ namespace WebIDLParser
                                 var prop = (TProperty)mem;
                                 prop.canWrite = !vReadonly;
                                 checkGotoEndOfStatement();
+                                prop.isStatic = vStatic;
                                 return mem;
                             }
                             else

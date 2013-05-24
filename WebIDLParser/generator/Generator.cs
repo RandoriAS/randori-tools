@@ -83,6 +83,16 @@ namespace WebIDLParser
                             }
                         }
 
+                        var extraProperties = TransformationConfig.addPropertyToType.ContainsKey(t.name) ? TransformationConfig.addPropertyToType[t.name] : null;
+                        if (extraProperties != null)
+                        {
+                            foreach (var extraProperty in extraProperties)
+                            {
+                                extraProperty.parentType = t;
+                                t.members.Add(extraProperty);
+                            }
+                        }
+
                         /*if (t.name == "Event")
                         {
                             t.rename("DOMEvent");
