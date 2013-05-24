@@ -44,4 +44,4 @@ By the way, to add extra classes to the builtin.swc, open the build.xml and find
 
 **&lt;include-sources dir="${basedir}/randori" includes="builtin.as Math.as Date.as RegExp.as"/&gt;**
 
-Add any .as files you want to include in the 'includes' attribute.
+Add any .as files you want to include in the 'includes' attribute, or, when the classes are in a different source dir, add an extra **&lt;include-sources/&gt; element.
