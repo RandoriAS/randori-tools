@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   applicationComplete="windowedapplication1_applicationCompleteHandler(event)">
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.utils.StringUtil;
+			
+			[Embed(mimeType="application/octet-stream",source="/assets/backbone_docs.html")]
+			public var inputString:Class;
+			[Embed(mimeType="application/octet-stream",source="/assets/Backbone.txt")]
+			public var backboneClassString:Class;
+			
+			private var _returnTypes:Object = {};
+			
+			private static const OUTPUT_DIR:String = "C:\\projects\\Randori Framework\\randori-libraries\\BackboneJS\\src\\randori\\backbone\\";
+			
+			protected function windowedapplication1_applicationCompleteHandler(event:FlexEvent):void
+			{
+				_returnTypes["toJSON"] = "Object";
+				_returnTypes["url"] = "String";
+				_returnTypes["urlRoot"] = "*";
+				_returnTypes["isNew"] = "Boolean";
+				_returnTypes["hasChanged"] = "Boolean";
+				_returnTypes["changedAttributes"] = "Object";
+				_returnTypes["previous"] = "*";
+				_returnTypes["previousAttributes"] = "Object";
+				_returnTypes["extend"] = "Object";
+				_returnTypes["defaults"] = "Object";
+				_returnTypes["$"] = "JQuery";
+				_returnTypes["where"] = "Array";
+				_returnTypes["findWhere"] = "Array";
+				_returnTypes["Model.parse"] = "Object";
+				_returnTypes["Collection.parse"] = "Array";
+				_returnTypes["Model.clone"] = "Model";
+				_returnTypes["Collection.clone"] = "Collection";
+				_returnTypes["create"] = "Model";
+				_returnTypes["get"] = "*";
+				_returnTypes["has"] = "Boolean";
+				_returnTypes["validate"] = "*";
+				var input:String = new inputString();
+				input = input.replace(/<img[^>]+>/g,"");
+				input = input.replace(/<br>/g,"");
+				source.text = input;
+				maximize();
+			}
+			
+			protected function generate_clickHandler(event:MouseEvent):void
+			{
+				var inputXML:XML = new XML(source.text);
+				var Backbone:String = "Backbone.";
+				var docs:XMLList = inputXML..h2.(text().substr(0,Backbone.length) == Backbone);
+				for each(var h2:XML in docs) {
+					generateClass(h2);
+				}
+				var content:String = new backboneClassString();
+				var lines:Vector.<String> = new Vector.<String>();
+				lines[lines.length] = content;
+				saveClassFile(lines, "Backbone");
+			}
+			
+			private function generateMember(output:Vector.<String>, par:XML, className:String):void
+			{
+				var staticStr:String = (className == "History") ? "static " : "";
+				var memberName:String = getMemberName(par);
+				var example:String = extractExampleText(par);
+				if (memberName == "constructor / initialize") {
+					output[output.length] = "";
+					addASDoc(output, par, example);
+					addConstructor(output, className, par);
+					return;
+				} else if ((memberName.substr(0, "Underscore Methods".length) == "Underscore Methods") || (memberName == "Catalog of Events")) {
+					return;
+				}
+				if (memberName == "$ (jQuery)") {
+					memberName = "$";
+				}
+				output[output.length] = "";
+				addASDoc(output, par, example);
+				var returnType:String = "";
+				if (String(par.code.text()).indexOf('(') > -1) {
+					returnType = extractReturnType(example, memberName, className);
+					output[output.length] = "\t\tpublic " + staticStr + "function " + memberName + "(" + extractParameters(par.code) + "):" + returnType + " {";
+					if (returnType != "void") {
+						switch(returnType) {
+							case "Number":
+								output[output.length] = "\t\t\treturn 0;";
+								break;
+							case "Boolean":
+								output[output.length] = "\t\t\treturn false;";
+								break;
+							default:
+								output[output.length] = "\t\t\treturn undefined;";
+								break;
+						}
+					}
+					output[output.length] = "\t\t}";
+				} else {
+					if ((String(par.code.text()).indexOf("= true") > -1) || (String(par.code.text()).indexOf("= false") > -1)) {
+						returnType = "Boolean";
+					} else {
+						switch(memberName) {
+							case "models":
+								returnType = "Array";
+								break;
+							case "el":
+								returnType = "Element";
+								break;
+							case "$el":
+								returnType = "JQuery";
+								break;
+							case "length":
+								returnType = "int";
+								break;
+							case "comparator":
+							case "validationError":
+								returnType = "*";
+								break;
+							case "id":
+							case "cid":
+							case "idAttribute":
+								returnType = "String";
+								break;
+							case "changed":
+							case "isValid":
+								returnType = "Boolean";
+								break;
+							default:
+								returnType = "Object";
+						}
+					}
+					output[output.length] = "\t\tpublic var " + memberName + ":" + returnType + ";";
+				}
+			}
+			
+			private function extractParameters(paramXML:XMLList):String
+			{
+				var text:String;
+				if (paramXML.length() == 0) {
+					return "";
+				} else {
+					text = paramXML[0].text();
+				}
+				text = text.substr(text.indexOf('(')+1);
+				text = text.substr(0,text.length-1);
+				var params:Array = text.split(',');
+				text = typeParamaters(params);
+				return text;
+			}
+			
+			private function typeParamaters(params:Array):String
+			{
+				for(var i:int=0; i < params.length; i++){
+					var param:String = params[i];
+					param = StringUtil.trim(param);
+					var lParam:String = param.toLowerCase();
+					if (param.length == 0) {
+						continue;
+					}
+					switch(lParam) {
+						case "[context]":
+						case "[other]":
+						case "[classproperties]":
+						case "[attributes]":
+						case "[attribute]":
+						case "[options]":
+						case "[events]":
+							param = stripBrackets(param) + ":Object=null";
+							break;
+						case "callback":
+						case "method":
+							param += ":Function";
+							break;
+						case "request) { ... }":
+							param = "callBack:Function";
+							break;
+						case "[callback]":
+							param = stripBrackets(param) + ":Function=null";
+							break;
+						case "other":
+						case "properties":
+						case "attribute":
+						case "attributes":
+						case "options":
+						case "response":
+						case "id":
+						case "model":
+							param += ":Object";
+							break;
+						case "[*args]":
+							param = "...rest";
+							break;
+						case "[models]":
+							param = stripBrackets(param) + ":Array=null";
+							break;
+						case "models":
+							param += ":Array";
+							break;
+						case "index":
+						case "begin":
+						case "end":
+							param += ":int";
+							break;
+						case "name":
+						case "route":
+						case "fragment":
+						case "selector":
+						case "event":
+							param += ":String";
+							break;
+						case "[event]":
+							param = stripBrackets(param) + ":String=null";
+							break;
+						case "element":
+							param += ":Element";
+							break;
+						case "collection":
+							param += ":Collection";
+							break;
+						default:
+							throw new Error("Unrecognized param name: " + param);
+					}
+					params[i] = param;
+				}
+				return params.join(", ");
+			}
+			
+			private function stripBrackets(param:String):String
+			{
+				if (param.substr(0,1) == "[") {
+					param = param.substr(1,param.length-2);
+				}
+				return param;
+			}
+			
+			private function stripAsterisk(param:String):String
+			{
+				return param.substr(1, param.length);
+			}
+			
+			private function extractExampleText(par:XML):String
+			{
+				var nextSibling:XML = par.parent().children()[par.childIndex()+1];
+				if (nextSibling.localName() == "pre") {
+					return nextSibling.toXMLString();
+				}
+				return null;
+			}
+			/*
+			<pre>_.each([1, 2, 3], alert);
+			=&gt; alerts each number in turn...
+			_.each({one : 1, two : 2, three : 3}, alert);
+			=&gt; alerts each number value in turn...</pre>
+			*/
+			
+			private function extractReturnType(example:String, funcName:String, className:String):String
+			{
+				if (_returnTypes[funcName]) {
+					return _returnTypes[funcName];
+				} else if (_returnTypes[className+"."+funcName]) {
+					return _returnTypes[className+"."+funcName];
+				}
+				else if (!example){
+					return "void";
+				} else {
+					var text:String = new XML(example).text();
+					var lines:Array = text.split("\n");
+					var lastLine:String = lines[lines.length-1];
+					if (lastLine.substr(0,2) == "=>") {
+						lastLine = lastLine.substr(lastLine.indexOf(" ")+1);
+						lastLine = StringUtil.trim(lastLine);
+						if (lastLine.substr(0,1) == "[") {
+							return "Array";
+						} else if (lastLine.substr(0,1) == "{") {
+							return "Object";
+						} else if ((lastLine.substr(0,1) == "\"") || (lastLine.substr(0,1) == "'")) {
+							return "String";
+						} else if ((lastLine == "false") || (lastLine == "true")) {
+							return "Boolean";
+						} else if (!isNaN(parseInt(lastLine))) {
+							return "Number";
+						}
+					}
+				}
+				return "void";
+			}
+			
+			private function addASDoc(output:Vector.<String>, par:XML, example:String):void
+			{
+				var parText:String = par.toXMLString();
+				var parts:Array = parText.split("\n");
+				var i:int;
+				for(i=0; i < parts.length; i++) {
+					parts[i] = "\t\t * " + parts[i];
+				}
+				if (example) {
+					var exampleParts:Array = example.split("\n");
+					for(i=0; i < exampleParts.length; i++) {
+						parts[parts.length] = "\t\t * " + exampleParts[i];
+					}
+				}
+				parts.splice(0, 0, "\t\t/**");
+				parts[parts.length] = "\t\t */";
+				for each(var str:String in parts) {
+					output[output.length] = str;
+				}
+			}
+			
+			private function generateClass(h2:XML):void
+			{
+				var parent:XML = h2.parent();
+				var className:String = h2.attribute("id");
+				if (className == "Sync") {
+					return;
+				}
+				var extend:String = (className == "Model") ? " extends Events" : "";
+				var output:Vector.<String> = new Vector.<String>();
+				output[output.length] = "package randori.backbone {";
+				output[output.length] = "";
+				output[output.length] = "\timport randori.webkit.dom.Element;"
+				output[output.length] = "\timport randori.jquery.JQuery;";
+				output[output.length] = "";
+				output[output.length] = "\t[JavaScript(export=\"false\",name=\"" + h2.text() + "\")]";
+				output[output.length] = "\tpublic class " + className + extend + " {";
+				generateClassBody(output, className, parent);
+				output[output.length] = "\t}";
+				output[output.length] = "}";
+				saveClassFile(output, h2.attribute("id"));
+			}
+			
+			private function saveClassFile(lines:Vector.<String>, className:String):void
+			{
+				var fullPath:String = OUTPUT_DIR + className + ".as";
+				var file:File = new File();
+				file.nativePath = fullPath;
+				var fileStream:FileStream = new FileStream(); 
+				fileStream.open(file, FileMode.WRITE);
+				fileStream.writeMultiByte(lines.join("\n"), "utf-8");
+				fileStream.close();
+			}
+			
+			private function generateClassBody(output:Vector.<String>, className:String, inputXML:XML):void
+			{
+				var methods:XMLList = inputXML..p.(String(attribute("id")).substr(0, className.length) == className);
+				for each(var p:XML in methods) {
+					generateMember(output, p, className);
+				}
+			}
+			
+			private function getMemberName(par:XML):String
+			{
+				return par.b.(attribute("class") == "header").text();
+			}
+
+			
+			private function addConstructor(output:Vector.<String>, className:String, par:XML):void
+			{
+				output[output.length] = "\t\tpublic function " + className + "(" + extractParameters(par.code) + ") {";
+				output[output.length] = "\t\t}";
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup width="100%" height="100%">
+		<s:TextArea id="source" width="100%" height="100%"/>
+	</s:HGroup>
+	<s:HGroup width="100%">
+		<s:Button id="generate" label="Generate" click="generate_clickHandler(event)"/>
+	</s:HGroup>
+</s:WindowedApplication>
