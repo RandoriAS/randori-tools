@@ -119,7 +119,7 @@ package
 	
 	// {DontEnum} length=1
 	internal native function _parseInt(s:String, radix:int):Number;
-	public function parseInt(s:String = "NaN", radix:int=0):Number
+	public function parseInt(s:String = "NaN", radix:int=10):Number
 	{
 	    return _parseInt(String(s), radix);
 	}
