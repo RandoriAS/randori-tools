@@ -15,7 +15,7 @@
  *
  * The Initial Developer of the Original Code is
  * Adobe System Incorporated.
- * Portions created by the Initial Developer are Copyright (C) 2004-2007
+ * Portions created by the Initial Developer are Copyright (C) 2004-2006
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -39,97 +39,28 @@
 package 
 {
 	//pseudo-final - no user class can extend Function
+	[native(cls="FunctionClass", instance="FunctionObject", methods="auto")]
 	dynamic public class Function
 	{
-		[native(type="MethodEnv*")]
-		private var methodEnv:*;
-
-		private static function ctorError(args:Array):Function
-		{
-			if (args.length != 0)
-			{
-				throw makeError( EvalError, 1066 /*kFunctionConstructorError*/, "Function" );
-			}
-			return function() {}
-		}
-
-		nativeHookNS static function callHook(...args):* 
-		{ 
-			return ctorError(args); 
-		}
-		nativeHookNS static function constructHook(...args):* 
-		{ 
-			return ctorError(args); 
-		}
-
-		// E262 {DontDelete}
-		// JS {DontEnum,DontDelete}
-		[forth(word="w_prototype_get")]
-		public native function get prototype():*;
-		
-		[forth(word="w_prototype_set")]
-		final private native function set _prototype(p:*):void
-		public function set prototype(p:*):void
-		{
-		    if (p == null || _isScriptObject(p))
-		        private::_prototype = p
-		    else
-		        throw makeError(TypeError,1049 /* kPrototypeTypeError */)
-		}
-		
-		// E262 {DontEnum, DontDelete, ReadOnly}
-		[forth(word="w_Function_length")]
-		public native function get length():int;
-
-        internal::prototype = function () {}
-        prototype.__proto__ = Object.prototype
-        prototype.constructor = Function
-
-        CONFIG::Full
-        {
-		    // NOTE: optional args aren't allowed at all for C++ native methods.
-		    // They are allowed for forth native methods but the values are ignored
-		    // (ie, they are useful for getting the method signature correct)
-		    // the Forth implementation is responsible for checking argc and filling in the default value in this case!
-		    [forth(word="w_Function_call")]
-		    AS3 native function call(thisArg:* = void(0), ...args):*;
-
-		    // Note, _apply assumes that argArray is Array (or null/void) and will crater
-		    // on other objects. if you can't guarantee the type then you should call
-		    // apply, not _apply.
-		    [forth(word="w_Function_apply")]
-		    final private native function _apply(thisArg:*, argArray:Array):*;
-
-		    // native methods cannot have default arg values anymore, so wrap it
-		    AS3 function apply(thisArg:* = void(0), argArray:* = void(0)):* 
-		    { 
-			    if (argArray && !(argArray is Array))
-				    throw makeError(TypeError, 1116 /*kApplyError*/);
-
-			    return this.private::_apply(thisArg, argArray); 
-		    }
-
-		    prototype.apply = function(thisArg:* = void(0), argArray:* = void(0)):*
-		    {
-			    // call apply, not _apply, so that arg checking is done
-			    return this.AS3::apply(thisArg, argArray);
-		    }
-		
-		    // @todo srj... we'd like this to be native-forth as well but there
-		    // isn't currently a way of making a prototype function native without
-		    // wrapping it, and there also isn't currently a way to wrap a restargs
-		    // function without the array building occurring (which is what we're trying to avoid)
-		    // so this version of call just uses apply...
-		    prototype.call = function(thisArg:* = void(0), ...args):*
-		    {
-			    return this.private::_apply(thisArg, args);
-		    }
-		}
-		
 		// Function.length = 1 per ES3
 		// E262 {ReadOnly, DontDelete, DontEnum }
 		public static const length:int = 1
 
+		// E262 {DontDelete}
+		// JS {DontEnum,DontDelete}
+		public native function get prototype()
+		public native function set prototype(p)
+		
+		// E262 {DontEnum, DontDelete, ReadOnly}
+		public native function get length():int
+
+		// called by native code to create empty functions used for 
+		// prototype and no-arg constructor.
+		private static function emptyCtor() 
+		{
+			return function() {}
+		}
+		
 		/* cn:  Spidermonkey returns the actual source text of the function here.  The ES3
 		//  standard only says:
 			15.3.4.2 Function.prototype.toString ( )
@@ -156,10 +87,35 @@ package
 			return "function Function() {}"
 		}
 
-		_hideproto(prototype);
+		AS3 native function call(thisArg=void 0, ...args)
+		prototype.call = function(thisArg=void 0, ...args)
+		{
+			var f:Function = this
+			return f.AS3::apply(thisArg, args)
+		}
 
-		// dont create Object's proto functions until after class Function is initialized
-		Object.init();
+		AS3 native function apply(thisArg=void 0, argArray=void 0)
+		prototype.apply = function(thisArg=void 0, argArray=void 0)
+		{
+			var f:Function = this
+			return f.AS3::apply(thisArg, argArray)
+		}
+
+		_dontEnumPrototype(prototype);
+	}
+}
+
+// not dynamic
+[native(cls="MethodClosureClass", instance="MethodClosure", methods="auto")]
+final class MethodClosure extends Function
+{
+	override public function get prototype()
+	{
+		return null
 	}
 
+	override public function set prototype(p)
+	{
+		Error.throwError( ReferenceError, 1074 /*kConstWriteError*/, "prototype", "MethodClosure" );
+	}
 }

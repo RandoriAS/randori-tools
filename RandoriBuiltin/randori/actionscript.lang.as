@@ -15,7 +15,7 @@
  *
  * The Initial Developer of the Original Code is
  * Adobe System Incorporated.
- * Portions created by the Initial Developer are Copyright (C) 2004-2007
+ * Portions created by the Initial Developer are Copyright (C) 2004-2006
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -38,10 +38,62 @@
 
 package
 {
-    CONFIG const kInvalidURIError = 1052
+	public namespace AS3 = "http://adobe.com/AS3/2006/builtin";
 
-	public namespace AS3 = "http://adobe.com/AS3/2006/builtin"
-	public namespace nativeHookNS = "http://www.adobe.com/2006/actionscript/flash/nativeHookNS";
+	/**
+	* @name Toplevel Function Properties
+	* Function properties of the global object (ECMA 15.1.2)
+	*/
+	
+	// {DontEnum} length=1
+	[native("Toplevel::decodeURI")]
+	public native function decodeURI(uri:String="undefined"):String
+
+	// {DontEnum} length=1
+	[native("Toplevel::decodeURIComponent")]
+	public native function decodeURIComponent(uri:String="undefined"):String
+
+	// {DontEnum} length=1
+	[native("Toplevel::encodeURI")]
+	public native function encodeURI(uri:String="undefined"):String
+
+	// {DontEnum} length=1
+	[native("Toplevel::encodeURIComponent")]
+	public native function encodeURIComponent(uri:String="undefined"):String
+	
+	// {DontEnum} length=1
+	[native("Toplevel::isNaN")]
+	public native function isNaN(n:Number = void 0):Boolean
+	
+	// {DontEnum} length=1
+	[native("Toplevel::isFinite")]
+	public native function isFinite(n:Number = void 0):Boolean
+	
+	// {DontEnum} length=1
+	[native("Toplevel::parseInt")]
+	public native function parseInt(s:String = "NaN", radix:int=0):Number
+	
+	// {DontEnum} length=1
+	[native("Toplevel::parseFloat")]
+	public native function parseFloat(str:String = "NaN"):Number
+ 
+
+	/**
+	* @name ECMA-262 Appendix B.2 extensions
+	* Extensions to ECMAScript, in ECMA-262 Appendix B.2
+	*/
+	
+	// {DontEnum} length=1
+	[native("Toplevel::escape")]
+	public native function escape(s:String="undefined"):String
+
+	// {DontEnum} length=1
+	[native("Toplevel::unescape")]
+	public native function unescape(s:String="undefined"):String
+
+	// {DontEnum} length=1
+	[native("Toplevel::isXMLName")]
+	public native function isXMLName(str=void 0):Boolean	// moved here from XML.as
 
 	// value properties of global object (ECMA 15.1.1)
 
@@ -63,100 +115,4 @@ package
 	// E262 { DontEnum, DontDelete}
 	// E327 { DontEnum, DontDelete, ReadOnly}
 	public const undefined = void 0
-
-	/**
-	* @name Toplevel Function Properties
-	* Function properties of the global object (ECMA 15.1.2)
-	*/
-	
-	internal function ckuri(uri:String, f:String):String
-	{
-	    if (uri === null)
-	        throw makeError(URIError, CONFIG::kInvalidURIError, f)
-	    return uri
-	}
-	
-	// native methods cannot have default arg values anymore, so wrap it
-
-	// {DontEnum} length=1
-	internal native function _decodeURI(uri:String, comp:Boolean):String;
-	public function decodeURI(uri:String="undefined"):String
-	{
-	    return ckuri(_decodeURI(String(uri),false), "decodeURI")
-	}
-
-	// {DontEnum} length=1
-	public function decodeURIComponent(uri:String="undefined"):String
-	{
-	    return ckuri(_decodeURI(String(uri),true), "decodeURIComponent")
-	}
-
-	internal native function _encode(uri:String, comp:Boolean):String
-
-	// {DontEnum} length=1
-	public function encodeURI(uri:String="undefined"):String
-	{
-		return ckuri(_encode(String(uri), false), "encodeURI")
-	}
-
-	// {DontEnum} length=1
-	public function encodeURIComponent(uri:String="undefined"):String
-	{
-		return ckuri(_encode(String(uri), true), "encodeURIComponent")
-	}
-	
-	// {DontEnum} length=1
-	public function isNaN(n:Number = NaN):Boolean
-	{
-	    return n !== n
-	}
-	
-	// {DontEnum} length=1
-	public function isFinite(n:Number = NaN):Boolean
-	{
-	    return n < 1/0 && n > -1/0
-	}
-	
-	// {DontEnum} length=1
-	internal native function _parseInt(s:String, radix:int):Number;
-	public function parseInt(s:String = "NaN", radix:int=10):Number
-	{
-	    return _parseInt(String(s), radix);
-	}
-	
-	// {DontEnum} length=1
-	CONFIG::Full
-	internal native function _parseFloat(str:String):Number;
-	
-	CONFIG::Full
-	public function parseFloat(str:String = "NaN"):Number
-	{
-	    return _parseFloat(String(str));
-	}
- 
-
-	/**
-	* @name ECMA-262 Appendix B.2 extensions
-	* Extensions to ECMAScript, in ECMA-262 Appendix B.2
-	*/
-	
-	// {DontEnum} length=1
-	CONFIG::Full
-	internal native function _escape(s:String):String;
-	
-	CONFIG::Full
-	public function escape(s:String="undefined"):String { return _escape(s); }
-
-	// {DontEnum} length=1
-	CONFIG::Full
-	internal native function _unescape(s:String):String;
-	
-	CONFIG::Full
-	public function unescape(s:String="undefined"):String { return _unescape(s); }
-
-    CONFIG::Full
-    {
-	    public native function avmtrace(s:String):void;
-		public native function avm_set_verbose(b:Boolean):void;
-    }
 }

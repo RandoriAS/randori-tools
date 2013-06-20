@@ -15,7 +15,7 @@
  *
  * The Initial Developer of the Original Code is
  * Adobe System Incorporated.
- * Portions created by the Initial Developer are Copyright (C) 2004-2007
+ * Portions created by the Initial Developer are Copyright (C) 2004-2006
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -37,7 +37,8 @@
 
 package
 {
-CONFIG const NegInfinity = -1/0
+
+[native(cls="MathClass", instance="double", methods="auto")]
 public final class Math 
 {
 	// the value properties of math are {DontEnum,DontDelete,ReadOnly}
@@ -50,101 +51,37 @@ public final class Math
 	public static const SQRT1_2 :Number = 0.7071067811865476
 	public static const SQRT2   :Number = 1.4142135623730951
 	
-	public static native function abs(x:Number):Number;
-	public static native function acos(x:Number):Number;
-	public static native function asin(x:Number):Number;
-	public static native function atan(x:Number):Number;
-	public static native function ceil(x:Number):Number;
-	public static native function cos(x:Number):Number;
-	public static native function exp(x:Number):Number;
-	public static native function floor(x:Number):Number;
-	public static native function log(x:Number):Number;
-	public static native function round(x:Number):Number;
-	public static native function sin(x:Number):Number;
-	public static native function sqrt(x:Number):Number;
-	public static native function tan(x:Number):Number;
-	public static native function atan2(x:Number, y:Number):Number;
-	public static native function pow(x:Number, y:Number):Number;
-	public static native function random():Number;
+	// min and max with 2 args are so common we overload these
+	// note, these appear to be unused, but are special-cased (by name) in Verifier
+	// in certain cases. Don't remove them.
+	native private static function _min    (x:Number, y:Number):Number
+	native private static function _max    (x:Number, y:Number):Number
+	
+	// wrappers for the above math methods.  these do automatic
+	// conversion of their arguments.
+	
+	public native static function abs	(x:Number)   :Number
+	public native static function acos	(x:Number)   :Number
+	public native static function asin	(x:Number)   :Number
+	public native static function atan	(x:Number)   :Number
+	public native static function ceil	(x:Number)   :Number
+	public native static function cos	(x:Number)   :Number
+	public native static function exp	(x:Number)   :Number
+	public native static function floor	(x:Number)   :Number
+	public native static function log	(x:Number)   :Number
+	public native static function round	(x:Number)   :Number
+	public native static function sin	(x:Number)   :Number
+	public native static function sqrt	(x:Number)   :Number
+	public native static function tan	(x:Number)   :Number
+	
+	public native static function atan2	(y:Number, x:Number):Number
+	public native static function pow	(x:Number, y:Number):Number
+	
+	private static const NegInfinity:Number = -1/0;
+	public native static function max    (x:Number = NegInfinity, y:Number = NegInfinity, ... rest):Number
+	public native static function min    (x:Number = Infinity, y:Number = Infinity, ... rest):Number
 
-	public static function max(x:Number = CONFIG::NegInfinity, y:Number = CONFIG::NegInfinity, ...args:Array):Number 
-	{ 
-		if (x !== x) return x
-	    if (y !== y) return y
-	    if (y > x) {
-	        x = y
-	    } else {
-	        if (y === x)
-	            if (y === 0)
-	                if (1/y > 0)
-            	        x = y  // -0
-	    }
-		for each (y in args)
-		{
-			if (y !== y) return y // isNaN
-			if (y > x)
-			{
-				x = y;
-			}
-			else if (y === x && y === 0)
-			{
-				/*
-					Lars: "You can tell -0 from 0 by dividing 1 by the zero, -0 gives -Infinity
-					and 0 gives Infinity, so if you know x is a zero the test for negative
-					zero is (1/x < 0)."
-				*/
-				if ((1 / y) > 0)
-					x = y;  // pick up negative zero when appropriate
-			}
-		}
-		return x;
-	}
-
-	public static function min(x:Number = Infinity, y:Number = Infinity, ...args):Number
-	{ 
-		if (x !== x) return x
-	    if (y !== y) return y
-	    if (y < x) {
-	        x = y
-	    } else {
-	        if (y === x)
-	            if (y === 0)
-	                if (1/y < 0)
-            	        x = y  // -0
-	    }
-	    
-	    for each (y in args)
-	    {
-			if (y !== y) return y
-			if (y < x) 
-			{
-				x = y;
-			}
-			else if (y === x && y === 0)
-			{
-				/*
-					Lars: "You can tell -0 from 0 by dividing 1 by the zero, -0 gives -Infinity
-					and 0 gives Infinity, so if you know x is a zero the test for negative
-					zero is (1/x < 0)."
-				*/
-			    if (y == x)
-			        if (y === 0)
-        				if ((1 / y) < 0)
-		        			x = y;  // pick up negative zero when appropriate
-			}
-		}
-		return x;
-	}
-
-	nativeHookNS static function callHook(...args):void
-	{
-		throw makeError( TypeError, 1075 /* kMathNotFunctionError */, "Math" );
-	}
-
-	nativeHookNS static function constructHook(...args):void
-	{
-		throw makeError( TypeError, 1076 /* kMathNotConstructorError */, "Math" );
-	}
+	public native static function random ():Number 
 }
 
 }

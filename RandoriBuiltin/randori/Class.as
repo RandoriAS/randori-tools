@@ -15,7 +15,7 @@
  *
  * The Initial Developer of the Original Code is
  * Adobe System Incorporated.
- * Portions created by the Initial Developer are Copyright (C) 2004-2007
+ * Portions created by the Initial Developer are Copyright (C) 2004-2006
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -39,19 +39,12 @@
 package 
 {
 	//pseudo-final - no user class can extend Class
+	[native(cls="ClassClass", instance="ClassClosure", methods="auto")]
 	public dynamic class Class
 	{
-		// you may be tempted to put fields here, but you must not, as
-		// existing ABC files have an implicit assumption that class Class
-		// never has any slots. Adding slots here will break things. Sorry bout that.
-		
 		// {DontEnum,DontDelete,ReadOnly}
-		[forth(word="w_prototype_get")]
-		public final native function get prototype():*
+		public native final function get prototype()
 		
-		[forth(word="w_prototype_set")]
-		internal final native function set prototype(p):void
-
 		// Class.length = 1 per ES3
 		// E262 {ReadOnly, DontDelete, DontEnum }
 		public static const length:int = 1;

@@ -15,7 +15,7 @@
  *
  * The Initial Developer of the Original Code is
  * Adobe System Incorporated.
- * Portions created by the Initial Developer are Copyright (C) 2004-2007
+ * Portions created by the Initial Developer are Copyright (C) 2004-2006
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -38,7 +38,7 @@
 
 package
 {
-
+	[native(cls="BooleanClass", instance="bool", methods="auto")]
 	public final class Boolean extends Object
 	{
 		// Boolean.length = 1 per ES3
@@ -59,7 +59,7 @@ package
 			if (!(this is Boolean)) {
 				// cause TypeError if this is not a Boolean value
 				// kInvokeOnIncompatibleObjectError
-				throw makeError( TypeError, 1004, "Boolean.prototype.toString" );
+				Error.throwError( TypeError, 1004, "Boolean.prototype.toString" );
 			}
 
 			return this ? "true" : "false"
@@ -73,16 +73,17 @@ package
 			if (!(this is Boolean)) {
 				// cause TypeError if this is not a Boolean value
 				// kInvokeOnIncompatibleObjectError
-				throw makeError( TypeError, 1004, "Boolean.prototype.valueOf" );
+				Error.throwError( TypeError, 1004, "Boolean.prototype.valueOf" );
 			}
 			
 			return this;
 		}
         
         // Dummy constructor function - This is neccessary so the compiler can do arg # checking for the ctor in strict mode
+        // The code for the actual ctor is in BooleanClass::construct in the avmplus
         public function Boolean(value = void 0)
         {}
 
-		_hideproto(prototype);
+		_dontEnumPrototype(prototype);
 	}
 }
