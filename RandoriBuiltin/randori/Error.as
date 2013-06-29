@@ -37,6 +37,7 @@
 
 package 
 {
+	[JavaScript(export="false", name="Error")]
 	[native(cls="ErrorClass", instance="ErrorObject", methods="auto")]
 	public dynamic class Error
 	{
@@ -59,11 +60,10 @@ package
 		//    stack:String
 		//    name:String
 		
-		function Error(message = "", id = 0)
+		function Error(message = "")
 		{
 			this.message = message;
-            this._errorID = id;
-            this.name = prototype.name;
+	            this.name = prototype.name;
 		}
 
 		prototype.toString = function():String
@@ -77,65 +77,6 @@ package
 		public native function getStackTrace():String;
 		public native static function getErrorMessage(index:int):String;
 
-		// avm+ specific utility method
-		public static function throwError(type:Class, index:uint, ... rest)
-		{
-            // This implements the same error string formatting as the native
-            // method PrintWriter::formatP(...) any changes to this method should
-            // also be made there to keep the two in sync.
-			var i=0;
-        	var f=function(match, pos, string) 
-            { 
-                var arg_num = -1;
-                switch(match.charAt(1))
-                {
-                    case '1':
-                        arg_num = 0;
-                        break;
-                    case '2':
-                        arg_num = 1;
-                        break;
-                    case '3':
-                        arg_num = 2;
-                        break;
-                    case '4':
-                        arg_num = 3;
-                        break;
-                    case '5':
-                        arg_num = 4;
-                        break;
-                    case '6':
-                        arg_num = 5;
-                        break;
-                }
-                if( arg_num > -1 && rest.length > arg_num )
-                    return rest[arg_num];
-                else
-                    return "";
-            }
-			throw new type(Error.getErrorMessage(index).replace(/%[0-9]/g, f), index);
-		}
-
-        private var _errorID : int;
-        
-        public function get errorID() : int
-        {
-            return this._errorID;
-        }
-	}
-
-	[native(cls="DefinitionErrorClass", instance="DefinitionErrorObject", methods="auto")]
-	public dynamic class DefinitionError extends Error 
-	{
-		// E262 {ReadOnly, DontDelete, DontEnum }
-		public static const length:int = 1
-
-		prototype.name = "DefinitionError"
-		function DefinitionError(message = "", id = 0) 
-		{
-			super(message, id);
-            this.name = prototype.name;
-		}	
 	}
 
 	[native(cls="EvalErrorClass", instance="EvalErrorObject", methods="auto")]
@@ -145,9 +86,9 @@ package
 		public static const length:int = 1
 
 		prototype.name = "EvalError"
-		function EvalError(message = "", id = 0) 
+		function EvalError(message = "") 
 		{
-			super(message, id);
+			super(message);
             this.name = prototype.name;
 		}
 	}
@@ -159,7 +100,7 @@ package
 		public static const length:int = 1
 
 		prototype.name = "RangeError"
-		function RangeError(message = "", id = 0) 
+		function RangeError(message = "") 
 		{
 			super(message, id);
             this.name = prototype.name;
@@ -173,25 +114,11 @@ package
 		public static const length:int = 1
 
 		prototype.name = "ReferenceError"
-		function ReferenceError(message = "", id = 0) 
+		function ReferenceError(message = "") 
 		{
-			super(message, id);
+			super(message);
             this.name = prototype.name;
 		}
-	}
-
-	[native(cls="SecurityErrorClass", instance="SecurityErrorObject", methods="auto")]
-	public dynamic class SecurityError extends Error 
-	{
-		// E262 {ReadOnly, DontDelete, DontEnum }
-		public static const length:int = 1
-
-		prototype.name = "SecurityError"
-		function SecurityError(message = "", id = 0) 
-		{
-			super(message, id);
-            this.name = prototype.name;
-		}	
 	}
 
 	[native(cls="SyntaxErrorClass", instance="SyntaxErrorObject", methods="auto")]
@@ -201,9 +128,9 @@ package
 		public static const length:int = 1
 
 		prototype.name = "SyntaxError"
-		function SyntaxError(message = "", id = 0) 
+		function SyntaxError(message = "") 
 		{
-			super(message, id);
+			super(message);
             this.name = prototype.name;
 		}	
 	}
@@ -215,9 +142,9 @@ package
 		public static const length:int = 1
 
 		prototype.name = "TypeError"
-		function TypeError(message = "", id = 0) 
+		function TypeError(message = "") 
 		{
-			super(message, id);
+			super(message);
             this.name = prototype.name;
 		}	
 	}
@@ -229,52 +156,11 @@ package
 		public static const length:int = 1
 
 		prototype.name = "URIError"
-		function URIError(message = "", id = 0) 
+		function URIError(message = "") 
 		{
-			super(message, id);
+			super(message);
             this.name = prototype.name;
 		}	
 	}
 
-	[native(cls="VerifyErrorClass", instance="VerifyErrorObject", methods="auto")]
-	public dynamic class VerifyError extends Error 
-	{
-		// E262 {ReadOnly, DontDelete, DontEnum }
-		public static const length:int = 1
-
-		prototype.name = "VerifyError"
-		function VerifyError(message = "", id = 0) 
-		{
-			super(message, id);
-            this.name = prototype.name;
-		}	
-	}
-
-	[native(cls="UninitializedErrorClass", instance="UninitializedErrorObject", methods="auto")]
-	public dynamic class UninitializedError	extends Error 
-	{
-		// E262 {ReadOnly, DontDelete, DontEnum }
-		public static const length:int = 1
-
-		prototype.name = "UninitializedError"
-		function UninitializedError(message = "", id = 0) 
-		{
-			super(message, id);
-            this.name = prototype.name;
-		}	
-	}
-
-	[native(cls="ArgumentErrorClass", instance="ArgumentErrorObject", methods="auto")]
-	public dynamic class ArgumentError extends Error 
-	{
-		// E262 {ReadOnly, DontDelete, DontEnum }
-		public static const length:int = 1
-
-		prototype.name = "ArgumentError"
-		function ArgumentError(message = "", id = 0)
-		{
-			super(message, id);
-            this.name = prototype.name;
-		}	
-	}
 }
