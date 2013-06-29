@@ -32,7 +32,7 @@
             <compute-digest>false</compute-digest>
 	    <load-config filename="${basedir}/randori-builtin-config.xml"/>
             <source-path path-element="${basedir}/as3_src" />
-	    <include-sources dir="${basedir}/randori" includes="builtin.as Math.as Date.as RegExp.as"/>
+	    <include-sources dir="${basedir}/randori" includes="builtin.as Math.as Date.as RegExp.as Error.as"/>
         </compc>
 
     </target>
