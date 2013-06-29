@@ -5,6 +5,7 @@
     
     <target name="define-constants">
         <property name="FLEX_HOME" value="C:/Program Files (x86)/Adobe/Adobe Flash Builder 4.6/sdks/4.9.1/" />
+        <property name="OUTPUT_PATH" value="D:/randori-sdk-swcs/" />
     </target>
 
 
@@ -23,7 +24,7 @@
     </target>
 
     <target name="builtin">
-        <compc output="builtin.swc" target-player="10.2.0">
+        <compc output="${OUTPUT_PATH}/builtin.swc" target-player="10.2.0">
             <strict>false</strict>
             <optimize>true</optimize>
             <warnings>true</warnings>
