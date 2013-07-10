@@ -15,7 +15,7 @@
  *
  * The Initial Developer of the Original Code is
  * Adobe System Incorporated.
- * Portions created by the Initial Developer are Copyright (C) 2004-2007
+ * Portions created by the Initial Developer are Copyright (C) 2004-2006
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
@@ -36,17 +36,47 @@
  * ***** END LICENSE BLOCK ***** */
 
 
-// each class is in its own file, we include them all here
-// so they end up in a single script that initializes all
-// at once, in the order of includes below.
+package 
+{
+	[native(cls="NamespaceClass", instance="Namespace", methods="auto")]
+	public final class Namespace
+	{
+		// E262 {ReadOnly,DontDelete,DontEnum}
+		// E357 length = 2
+		public static const length = 2 
+		
+		// E357 {DontDelete, ReadOnly}
+		public native function get prefix()
 
-include "Object.as"
-include "Class.as"
-include "Namespace.as"
-include "Function.as"
-include "Boolean.as"
-include "Number.as"
-include "String.as"
-include "Array.as"
-include "actionscript.lang.as"
-include "Vector.as"
+		// E357 {DontDelete, ReadOnly}
+		public native function get uri():String
+
+		AS3 function valueOf():String { return uri }
+
+		prototype.valueOf = function():String
+		{
+			if (this === prototype) return ""
+			var n:Namespace = this
+			return n.uri;
+		}
+
+		AS3 function toString():String
+		{
+			return uri
+		}
+		
+		prototype.toString = function ():String
+		{
+			if (this === prototype) return ""
+			var n:Namespace = this
+			return n.AS3::toString();
+		}
+
+        // Dummy constructor function - This is neccessary so the compiler can do arg # checking for the ctor in strict mode
+        // The code for the actual ctor is in NamespaceClass::construct in the avmplus
+        public function Namespace(prefix = void 0, uri = void 0 )
+        {}
+        
+        _dontEnumPrototype(prototype);
+	}
+}
